@@ -23,7 +23,7 @@ class scanner init_source report_error  =
       source.[current - 1]
       
     method add_token (token_type) = 
-      let text = (String.sub source start current) in
+      let text = String.sub source start (current - start) in
       let token = new Token.token token_type text Literal.NoLiteral line in
       Dynarray.add_last tokens token;
 
@@ -41,7 +41,7 @@ class scanner init_source report_error  =
         source.[current]
 
     method add_token_helper (token_type, literal) =
-      let text = (String.sub source start current) in
+      let text = String.sub source start (current - start) in
       let token = new Token.token token_type text literal line in
       Dynarray.add_last tokens token
 
@@ -57,12 +57,12 @@ class scanner init_source report_error  =
         report_error (line, "Unterminated string")
       else begin
         ignore (self#advance ());
-        let literal = String.sub source (start+1) (current-1) in
+        let literal = String.sub source (start + 1) (current - start - 2) in
         self#add_token_helper (Token_type.STRING, Literal.StringLiteral literal)
       end
     
     method is_digit (c) =
-      c >= '-' && c <= '9'
+      c >= '0' && c <= '9'
 
     method peek_next () =
       if (current + 1) >= String.length source then
@@ -72,25 +72,28 @@ class scanner init_source report_error  =
       end
 
     method number () =
-      
+
       while self#is_digit(self#peek ()) do
+        Printf.printf "entered the number iteration\n";
         ignore(self#advance())
       done;
 
       if self#peek() = '.' && self#is_digit(self#peek_next()) then begin
+        Printf.printf "entered the float check\n";
         ignore(self#advance());
         while self#is_digit(self#peek()) do
           ignore(self#advance())
         done
       end;
       
-      let text = String.sub source start current in
+      let text = String.sub source start (current - start) in
+      Printf.printf "number with value %s\n" text;
       let value = float_of_string text in
       self#add_token_helper (Token_type.NUMBER, Literal.NumberLiteral value)
 
     method identifier () =
       while self#is_alphanumeric(self#peek()) do ignore(self#advance()) done; 
-      let text = String.sub source start current in
+      let text = String.sub source start (current - start) in
       let token = match Hashtbl.find_opt Token_type.keywords text with
         | Some token_type -> token_type
         | None -> Token_type.IDENTIFIER
@@ -107,6 +110,7 @@ class scanner init_source report_error  =
 
     method scan_token () =
       let c = self#advance () in
+      Printf.printf "%c\n" c; 
       match c with
       | '(' -> self#add_token (Token_type.LEFT_PAREN)
       | ')' -> self#add_token (Token_type.RIGHT_PAREN)
@@ -133,9 +137,10 @@ class scanner init_source report_error  =
       | '\r' -> ()
       | '\t' -> ()
       | '\n' -> line <- line + 1
-      | _ ->  if self#is_digit(c) then
+      | _ ->  if self#is_digit(c) then begin
+                Printf.printf "scanned digit %c\n" c;
                 ignore(self#number())
-              else if self#is_alpha(c) then
+              end else if self#is_alpha(c) then
                 ignore(self#identifier ())
               else
                 report_error (line, "unexpected character")
