@@ -17,7 +17,8 @@ class scanner init_source report_error  =
       Dynarray.add_last 
         tokens 
         (new Token.token Token_type.EOF "" Literal.NoLiteral line);
-      self#show_tokens()
+      self#show_tokens();
+      tokens
 
     method is_at_end () : bool =
       current >= String.length source

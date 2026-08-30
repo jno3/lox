@@ -35,6 +35,23 @@ let match_tokens p types =
 	end else
 		false
 
+let rec synchronize p =
+	ignore (advance p);
+  	synchronize_loop p
+
+and synchronize_loop p =
+	if is_at_end p then ()
+	else
+		let prev = Dynarray.get p.tokens (p.current - 1) in
+		if prev#token_type () = Token_type.SEMICOLON then ()
+		else
+			match peek p with
+			| Token_type.CLASS | Token_type.FUN | Token_type.VAR
+			| Token_type.FOR | Token_type.IF | Token_type.WHILE
+			| Token_type.PRINT | Token_type.RETURN -> ()
+			| _ ->
+				ignore (advance p);
+				synchronize_loop p
 
 let rec expression p =
 	equality p

@@ -20,6 +20,9 @@ let () =
         interpreter#run_prompt ()
     end;
 
-    interpreter#run_file(!input_file)
+    let token_list = interpreter#run_file(!input_file) in
+    let parser = Interpreter.Parser.make token_list in
+    let expr = Interpreter.Parser.expression parser in
+    ()
 
 
