@@ -6,6 +6,9 @@ class scanner init_source report_error  =
     val mutable current : int = 0
     val mutable line : int = 1
 
+    method show_tokens () =
+      Dynarray.iter (fun t -> Printf.printf "%s\n" (t#to_string ())) tokens
+
     method scan_tokens () =
       while not (self#is_at_end ()) do
         start <- current;
@@ -13,7 +16,8 @@ class scanner init_source report_error  =
       done;
       Dynarray.add_last 
         tokens 
-        (new Token.token Token_type.EOF "" Literal.NoLiteral line) 
+        (new Token.token Token_type.EOF "" Literal.NoLiteral line);
+      self#show_tokens()
 
     method is_at_end () : bool =
       current >= String.length source
