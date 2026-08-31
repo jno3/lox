@@ -14,15 +14,15 @@ let speclist =  [("-o", Arg.Set_string output_file, "set output file name")]
 
 let () = 
     Arg.parse speclist anon_fun usage_msg;
-    let interpreter = new Interpreter.Lox.lox in
+    let interpreter = new Interpreter_project.Lox.lox in
     
     if !input_file = "" then begin
         interpreter#run_prompt ()
     end;
 
     let token_list = interpreter#run_file(!input_file) in
-    let parser = Interpreter.Parser.make token_list in
-    let expr = Interpreter.Parser.expression parser in
+    let parser = Interpreter_project.Parser.make token_list in
+    let _expr = Interpreter_project.Parser.expression parser in
     ()
 
 

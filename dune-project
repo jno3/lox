@@ -1,6 +1,6 @@
 (lang dune 3.24)
 
-(name interpreter)
+(name interpreter_project)
 
 (generate_opam_files true)
 
@@ -16,7 +16,7 @@
 (documentation https://url/to/documentation)
 
 (package
- (name interpreter)
+ (name interpreter_project)
  (synopsis "A short synopsis")
  (description "A longer description")
  (depends ocaml)

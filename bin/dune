@@ -1,4 +1,4 @@
 (executable
- (public_name interpreter)
+ (public_name interpreter_project)
  (name main)
- (libraries interpreter))
+ (libraries interpreter_project))
