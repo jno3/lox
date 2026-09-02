@@ -36,18 +36,18 @@ and evaluate_binary expr_l operator expr_r =
 			Literal.StringLiteral (string_l ^ string_r) 
 		
 		
-		| (Literal.BoolLiteral bool_l, Token_type.GREATER, Literal.BoolLiteral bool_r) ->
-			Literal.BoolLiteral (bool_l > bool_r) 
-		| (Literal.BoolLiteral bool_l, Token_type.GREATER_EQUAL, Literal.BoolLiteral bool_r) ->
-			Literal.BoolLiteral (bool_l >= bool_r)
-		| (Literal.BoolLiteral bool_l, Token_type.LESS, Literal.BoolLiteral bool_r) ->
-			Literal.BoolLiteral (bool_l < bool_r)
-		| (Literal.BoolLiteral bool_l, Token_type.LESS_EQUAL, Literal.BoolLiteral bool_r) ->
-			Literal.BoolLiteral (bool_l >= bool_r)
-		| (Literal.BoolLiteral bool_l, Token_type.EQUAL_EQUAL, Literal.BoolLiteral bool_r) ->
-			Literal.BoolLiteral (bool_l = bool_r)
-		| (Literal.BoolLiteral bool_l, Token_type.BANG_EQUAL, Literal.BoolLiteral bool_r) ->
-			Literal.BoolLiteral (bool_l != bool_r)
+		| (Literal.NumberLiteral number_l, Token_type.GREATER, Literal.NumberLiteral number_r) ->
+			Literal.BoolLiteral (number_l > number_r) 
+		| (Literal.NumberLiteral number_l, Token_type.GREATER_EQUAL, Literal.NumberLiteral number_r) ->
+			Literal.BoolLiteral (number_l >= number_r)
+		| (Literal.NumberLiteral number_l, Token_type.LESS, Literal.NumberLiteral number_r) ->
+			Literal.BoolLiteral (number_l < number_r)
+		| (Literal.NumberLiteral number_l, Token_type.LESS_EQUAL, Literal.NumberLiteral number_r) ->
+			Literal.BoolLiteral (number_l <= number_r)
+		| (value_l, Token_type.EQUAL_EQUAL, value_r) ->
+			Literal.BoolLiteral (is_equal value_l value_r)
+		| (value_l , Token_type.BANG_EQUAL, value_r) ->
+			Literal.BoolLiteral (not(is_equal value_l value_r))
 		| _ -> failwith "unreachable"
 
 and evaluate expr = 
