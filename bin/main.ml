@@ -20,9 +20,11 @@ let () =
         interpreter#run_prompt ()
     end;
 
+    let _global_env = Interpreter_project.Envr.make in
     let token_list = interpreter#run_file(!input_file) in
     let parser = Interpreter_project.Parser.make token_list in
-    let _expr = Interpreter_project.Parser.expression parser in
+    let stmts = Interpreter_project.Parser.delcaration parser in
+    let _interpret = Interpreter_project.Interpreter.execute stmts _global_env in
     ()
 
 

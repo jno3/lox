@@ -3,3 +3,5 @@ type expr =
 	| Grouping of expr
 	| Literal of Literal.literal
 	| Unary of Token.token * expr
+	| Assign of Token.token * expr
+	| Variable of Token.token

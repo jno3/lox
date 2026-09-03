@@ -4,3 +4,4 @@ type literal =
   | BoolLiteral of bool
   | NilLiteral
   | NoLiteral
+[@@deriving show]

@@ -6,6 +6,7 @@ class token init_token_type init_lexeme init_literal init_line =
     val line : int = init_line
 
     method token_type () = token_type
+    method lexeme () = lexeme
     method literal () = literal
     method line () = line
     method to_string () = 

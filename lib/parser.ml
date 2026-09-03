@@ -54,7 +54,17 @@ and synchronize_loop p =
 				synchronize_loop p
 
 let rec expression p =
-	equality p
+	assignment p
+
+and assignment p =
+  let expr = equality p in
+  if match_tokens p [Token_type.EQUAL] then
+    let value = assignment p in
+    match expr with
+    | Expr.Variable name -> Expr.Assign (name, value)
+    | _ -> failwith "Invalid assignment target."
+  else
+    expr
 
 and equality p =
 	let expr = ref (comparison p) in
@@ -109,6 +119,7 @@ and unary p =
 
 and primary p = 
 	match (advance p)#token_type () with
+	| Token_type.IDENTIFIER -> Expr.Variable (Dynarray.get p.tokens (p.current - 1))
 	| Token_type.FALSE -> Expr.Literal (Literal.BoolLiteral false)
 	| Token_type.TRUE -> Expr.Literal (Literal.BoolLiteral true)
 	| Token_type.NIL -> Expr.Literal (Literal.NilLiteral)
@@ -118,8 +129,42 @@ and primary p =
 		let expr = expression p in
 		ignore(consume p Token_type.RIGHT_PAREN "Expect ')' after expression");
 		Expr.Grouping expr
-
 	| _ -> failwith "Expect expression."
+
+and declaration p =
+	if match_tokens p [Token_type.VAR] then
+		var_declaration p
+	else
+		statement p
+
+and var_declaration p =
+	let var_name = consume p Token_type.IDENTIFIER "Expect variable name." in
+	
+	let expr = 
+	if match_tokens p [Token_type.EQUAL] then
+		Some (expression p)
+	else
+		None
+	in
+	
+	ignore (consume p Token_type.SEMICOLON "Expect ';' after expression.");
+	Stmt.Var (var_name, expr)
+
+and statement p = 
+	if match_tokens p [Token_type.PRINT] then
+		print_statement p
+	else
+		expression_statement p
+
+and print_statement p =
+	let expr = expression p in
+	ignore (consume p Token_type.SEMICOLON "Expect ';' after expression.");
+	Stmt.Print expr 
+
+and expression_statement p = 
+	let expr = expression p in
+	ignore (consume p Token_type.SEMICOLON "Expect ';' after expression.");
+	Stmt.Expression expr
 
 
 

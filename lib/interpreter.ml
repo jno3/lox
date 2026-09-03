@@ -10,16 +10,16 @@ let is_equal bool_l bool_r =
 	| Literal.NilLiteral, _ | _, Literal.NilLiteral -> false
 	| _ -> bool_l = bool_r
 
-let rec evaluate_unary operator expr_r = 
-	let right = evaluate expr_r in
+let rec evaluate_unary operator expr_r envr= 
+	let right = evaluate expr_r envr in
 	match operator#token_type (), right with
 	| Token_type.MINUS, Literal.NumberLiteral number -> Literal.NumberLiteral (-.number)
 	| Token_type.BANG, _ -> Literal.BoolLiteral (not(is_truthy right))
 	| _ -> failwith "unreachable"
 
-and evaluate_binary expr_l operator expr_r =
-	let left = evaluate expr_l in
-	let right = evaluate expr_r in
+and evaluate_binary expr_l operator expr_r envr =
+	let left = evaluate expr_l envr in
+	let right = evaluate expr_r envr in
 
 	match left, operator#token_type (), right with
 		| (Literal.NumberLiteral number_l, Token_type.MINUS, Literal.NumberLiteral number_r) ->
@@ -50,9 +50,27 @@ and evaluate_binary expr_l operator expr_r =
 			Literal.BoolLiteral (not(is_equal value_l value_r))
 		| _ -> failwith "unreachable"
 
-and evaluate expr = 
+and evaluate expr envr = 
 	match expr with
 	| Expr.Literal literal -> literal
-	| Expr.Grouping grouping -> evaluate grouping
-	| Expr.Unary(operator, expr_r) -> evaluate_unary operator expr_r
-	| Expr.Binary(expr_l, operator, expr_r) -> evaluate_binary expr_l operator expr_r
+	| Expr.Grouping grouping -> evaluate grouping envr
+	| Expr.Unary(operator, expr_r) -> evaluate_unary operator expr_r envr
+	| Expr.Binary(expr_l, operator, expr_r) -> evaluate_binary expr_l operator expr_r envr
+	| Expr.Assign(name, expr) -> 
+		let value = evaluate expr envr in
+		Envr.assign (name#lexeme ()) value envr;
+		value
+	| Expr.Variable token -> Envr.get (token#lexeme ()) envr
+
+let execute stmt envr = 
+	match stmt with
+	| Stmt.Expression expr -> ignore(evaluate expr envr)
+	| Stmt.Print expr -> 
+		let value = evaluate expr envr in
+		print_endline (Literal.show_literal value)
+	| Stmt.Var (name, expr) -> 
+		let value = match expr with
+			| Some expr -> evaluate expr envr
+			| None -> Literal.NilLiteral
+		in
+		Envr.define (name#lexeme ()) value envr
