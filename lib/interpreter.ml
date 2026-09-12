@@ -62,7 +62,7 @@ and evaluate expr envr =
 		value
 	| Expr.Variable token -> Envr.get (token#lexeme ()) envr
 
-let execute stmt envr = 
+and execute stmt envr = 
 	match stmt with
 	| Stmt.Expression expr -> ignore(evaluate expr envr)
 	| Stmt.Print expr -> 
@@ -74,3 +74,8 @@ let execute stmt envr =
 			| None -> Literal.NilLiteral
 		in
 		Envr.define (name#lexeme ()) value envr
+	| Stmt.Block(stmts) -> 
+		let local_env = Envr.make_enclosed envr in
+		List.iter ( fun local_stmt -> 
+			execute local_stmt local_env
+		) stmts

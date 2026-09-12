@@ -3,7 +3,7 @@ type envr = {
 	enclosing : envr option;
 }
 
-let make = {
+let make () = {
 	values = Hashtbl.create 16;
 	enclosing = None;
 }

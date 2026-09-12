@@ -135,7 +135,7 @@ and declaration p =
 	if match_tokens p [Token_type.VAR] then
 		var_declaration p
 	else
-		statement p
+		statement p	
 
 and var_declaration p =
 	let var_name = consume p Token_type.IDENTIFIER "Expect variable name." in
@@ -153,8 +153,18 @@ and var_declaration p =
 and statement p = 
 	if match_tokens p [Token_type.PRINT] then
 		print_statement p
+	else if match_tokens p [Token_type.LEFT_BRACE] then
+		Stmt.Block(block p)
 	else
 		expression_statement p
+
+and block p =
+	let stmts = ref [] in
+	while not (check p Token_type.RIGHT_BRACE) && not (is_at_end p) do
+		stmts := declaration p :: !stmts
+	done;
+	ignore (consume p Token_type.RIGHT_BRACE "Expect '}' after block.");
+	List.rev !stmts
 
 and print_statement p =
 	let expr = expression p in
