@@ -57,7 +57,7 @@ let rec expression p =
 	assignment p
 
 and assignment p =
-  let expr = equality p in
+  let expr = or_op p in
   if match_tokens p [Token_type.EQUAL] then
     let value = assignment p in
     match expr with
@@ -65,6 +65,24 @@ and assignment p =
     | _ -> failwith "Invalid assignment target."
   else
     expr
+
+and or_op p =
+	let expr = ref (and_op p) in
+	while match_tokens p [Token_type.OR] do
+		let operator = Dynarray.get p.tokens (p.current -1) in
+		let right = and_op p in
+		expr := Expr.Logical (!expr, operator, right)
+	done;
+	!expr
+
+and and_op p = 
+	let expr = ref (equality p) in
+	while match_tokens p [Token_type.AND] do
+		let operator = Dynarray.get p.tokens (p.current -1) in
+		let right = equality p in
+		expr := Expr.Logical (!expr, operator, right)
+	done;
+	!expr
 
 and equality p =
 	let expr = ref (comparison p) in
@@ -155,6 +173,12 @@ and statement p =
 		print_statement p
 	else if match_tokens p [Token_type.LEFT_BRACE] then
 		Stmt.Block(block p)
+	else if match_tokens p [Token_type.IF] then 
+		if_statement p
+	else if match_tokens p [Token_type.WHILE] then
+		while_statement p
+	else if match_tokens p [Token_type.FOR] then
+		for_statement p
 	else
 		expression_statement p
 
@@ -165,6 +189,72 @@ and block p =
 	done;
 	ignore (consume p Token_type.RIGHT_BRACE "Expect '}' after block.");
 	List.rev !stmts
+
+and if_statement p = 
+	ignore(consume p Token_type.LEFT_PAREN "Expect '(' after 'if'.");
+	let expr = expression p in
+	ignore(consume p Token_type.RIGHT_PAREN "Expect ')' after if condition.");
+
+	let then_branch = statement p in
+	if match_tokens p [Token_type.ELSE] then
+		Stmt.If(expr, then_branch, Some(statement p))
+	else
+		Stmt.If(expr, then_branch, None)
+
+and while_statement p = 
+	ignore(consume p Token_type.LEFT_PAREN "Expect '(' after 'while'.");
+	let expr = expression p in
+	ignore(consume p Token_type.RIGHT_PAREN "Expect ')' after while condition.");
+	let body = statement p in
+	Stmt.While(expr, body)
+
+and for_statement p = 
+	ignore(consume p Token_type.LEFT_PAREN "Expect '(' after 'for'");
+	let init =
+		if match_tokens p [Token_type.SEMICOLON] then
+			None
+		else if match_tokens p [Token_type.VAR] then
+			Some (var_declaration p)
+		else
+			Some (expression_statement p)
+	in
+
+	let condition = 
+		if not (check p Token_type.SEMICOLON) then
+			Some (expression p)
+		else
+			None
+	in
+	ignore(consume p Token_type.SEMICOLON "Expect ';' in for loop.");
+
+	let increment = 
+		if not (check p Token_type.RIGHT_PAREN) then
+			Some (expression p)
+		else
+			None
+	in
+	ignore (consume p Token_type.RIGHT_PAREN "Expect ')' after for clauses.");
+	
+	let body = statement p in
+	let body =
+	match increment with
+	| Some inc -> Stmt.Block [body; Stmt.Expression inc]
+	| None -> body
+	in
+	let cond =
+		match condition with
+		| Some c -> c
+		| None -> Expr.Literal (Literal.BoolLiteral true)
+	in
+	let body = Stmt.While (cond, body) in
+	let body =
+		match init with
+		| Some i -> Stmt.Block [i; body]
+		| None -> body
+	in
+	body
+
+
 
 and print_statement p =
 	let expr = expression p in

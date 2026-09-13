@@ -10,12 +10,25 @@ let is_equal bool_l bool_r =
 	| Literal.NilLiteral, _ | _, Literal.NilLiteral -> false
 	| _ -> bool_l = bool_r
 
-let rec evaluate_unary operator expr_r envr= 
+
+let rec evaluate_unary operator expr_r envr = 
 	let right = evaluate expr_r envr in
 	match operator#token_type (), right with
 	| Token_type.MINUS, Literal.NumberLiteral number -> Literal.NumberLiteral (-.number)
 	| Token_type.BANG, _ -> Literal.BoolLiteral (not(is_truthy right))
 	| _ -> failwith "unreachable"
+
+
+and evaluate_logical expr_l operator expr_r envr =
+  let left = evaluate expr_l envr in
+  match operator#token_type () with
+  | Token_type.OR ->
+      if is_truthy left then left
+      else evaluate expr_r envr
+  | Token_type.AND ->
+      if not (is_truthy left) then left
+      else evaluate expr_r envr
+  | _ -> failwith "unreachable"
 
 and evaluate_binary expr_l operator expr_r envr =
 	let left = evaluate expr_l envr in
@@ -61,6 +74,7 @@ and evaluate expr envr =
 		Envr.assign (name#lexeme ()) value envr;
 		value
 	| Expr.Variable token -> Envr.get (token#lexeme ()) envr
+	| Expr.Logical (expr_l, operator, expr_r) -> evaluate_logical expr_l operator expr_r envr
 
 and execute stmt envr = 
 	match stmt with
@@ -79,3 +93,16 @@ and execute stmt envr =
 		List.iter ( fun local_stmt -> 
 			execute local_stmt local_env
 		) stmts
+	| Stmt.If (expr, then_branch, else_branch) ->
+		let value = evaluate expr envr in
+		if is_truthy value then
+			execute then_branch envr
+		else
+			(match else_branch with
+				| Some(else_stmt) -> execute else_stmt envr
+				| None -> ())
+	| Stmt.While (expr, body) ->
+		while is_truthy (evaluate expr envr) do
+			execute body envr
+		done
+

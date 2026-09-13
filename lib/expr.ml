@@ -5,3 +5,4 @@ type expr =
 	| Unary of Token.token * expr
 	| Assign of Token.token * expr
 	| Variable of Token.token
+	| Logical of expr * Token.token * expr
