@@ -4,6 +4,8 @@ let is_truthy expr_literal =
 	| Literal.BoolLiteral b -> b
 	| _ -> true
 
+exception Return of Literal.literal
+
 let is_equal bool_l bool_r =
 	match bool_l, bool_r with
 	| Literal.NilLiteral, Literal.NilLiteral -> true
@@ -75,6 +77,14 @@ and evaluate expr envr =
 		value
 	| Expr.Variable token -> Envr.get (token#lexeme ()) envr
 	| Expr.Logical (expr_l, operator, expr_r) -> evaluate_logical expr_l operator expr_r envr
+	| Expr.Call (callee, _, args_) -> 
+		let callee = evaluate callee envr in
+		let args = List.map((fun arg -> evaluate arg envr)) args_ in
+		match callee with
+			| Literal.Function callable -> callable args
+			| _ -> failwith "can only call functions and classes"
+
+
 
 and execute stmt envr = 
 	match stmt with
@@ -105,4 +115,25 @@ and execute stmt envr =
 		while is_truthy (evaluate expr envr) do
 			execute body envr
 		done
+	| Stmt.Function (name, params, body) ->
+		let closure_env = envr in
+		let callable args =
+			if List.length args <> List.length params then
+				failwith (Printf.sprintf "Expected %d arguments but got %d." (List.length params) (List.length args));
+			
+			let call_env = Envr.make_enclosed closure_env in			
+			List.iter2 (fun param arg -> Envr.define (param#lexeme ()) arg call_env) params args;
+			try
+				List.iter (fun s -> execute s call_env) body;
+				Literal.NilLiteral
+			with Return value -> value
+		in
+		Envr.define (name#lexeme ()) (Literal.Function callable) envr
+	| Stmt.Return (expr_opt) ->
+		let value = match expr_opt with
+			| Some expr -> evaluate expr envr
+			| None -> Literal.NilLiteral
+		in
+		raise (Return value)
 
+		

@@ -5,3 +5,5 @@ type stmt =
 	| Block of stmt list
 	| If of Expr.expr * stmt * stmt option
 	| While of Expr.expr * stmt
+	| Function of Token.token * Token.token list * stmt list
+	| Return of Expr.expr option

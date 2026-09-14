@@ -3,6 +3,7 @@ type expr =
 	| Grouping of expr
 	| Literal of Literal.literal
 	| Unary of Token.token * expr
+	| Call of expr * Token.token * expr list
 	| Assign of Token.token * expr
 	| Variable of Token.token
 	| Logical of expr * Token.token * expr

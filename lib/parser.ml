@@ -115,7 +115,6 @@ and term p =
 	done;
 	!expr
 
-
 and factor p =
 	let expr = ref (unary p) in
 	while match_tokens p [Token_type.SLASH; Token_type.STAR] do
@@ -125,14 +124,33 @@ and factor p =
 	done;
 	!expr
 
-
 and unary p = 
 	if match_tokens p [Token_type.BANG; Token_type.MINUS] then
 		let operator = Dynarray.get p.tokens (p.current - 1) in
 		let right = unary p in
 		Expr.Unary (operator, right)
 	else
-	primary p
+	call p
+
+and call p = 
+	let expr = ref (primary p) in 
+	while match_tokens p [Token_type.LEFT_PAREN] do
+		expr := finish_call p !expr
+	done;
+	!expr
+
+and finish_call p expr = 
+	let arguments = ref [] in
+	if not (check p Token_type.RIGHT_PAREN) then begin
+		arguments := (expression p) :: !arguments;
+		while match_tokens p [Token_type.COMMA] do
+		arguments := (expression p) :: !arguments;
+		done;
+	end;
+	let paren = (consume p Token_type.RIGHT_PAREN "Expect ')' after arguments.") in
+	if List.length !arguments >= 255 then
+		failwith "Can't havbe more than 255 arguments";
+	Expr.Call(expr, paren, List.rev !arguments)
 
 
 and primary p = 
@@ -152,6 +170,8 @@ and primary p =
 and declaration p =
 	if match_tokens p [Token_type.VAR] then
 		var_declaration p
+	else if match_tokens p [Token_type.FUN] then
+		function_declaration p 
 	else
 		statement p	
 
@@ -179,8 +199,10 @@ and statement p =
 		while_statement p
 	else if match_tokens p [Token_type.FOR] then
 		for_statement p
+	else if match_tokens p [Token_type.RETURN] then
+		return_statement p
 	else
-		expression_statement p
+ 		expression_statement p
 
 and block p =
 	let stmts = ref [] in
@@ -189,6 +211,29 @@ and block p =
 	done;
 	ignore (consume p Token_type.RIGHT_BRACE "Expect '}' after block.");
 	List.rev !stmts
+
+and function_declaration p = 
+	let function_name = consume p Token_type.IDENTIFIER "Expect function name." in
+	ignore (consume p Token_type.LEFT_PAREN "Expect '(' after function name.");
+	let params = ref [] in
+	if not (check p Token_type.RIGHT_PAREN) then begin
+		params := (consume p Token_type.IDENTIFIER "Expect parameter name.") :: !params;
+		while match_tokens p [Token_type.COMMA] do
+			params := (consume p Token_type.IDENTIFIER "Expect parameter name.") :: !params
+		done
+	end;
+	ignore (consume p Token_type.RIGHT_PAREN "Expect ')' after parameters.");
+	ignore (consume p Token_type.LEFT_BRACE "Expect '{' after function definition.");
+	Stmt.Function(function_name, List.rev !params, block p)
+
+and return_statement p = 
+	let value = if not (check p Token_type.SEMICOLON) then 
+		Some(expression p)
+	else
+		None
+	in
+	ignore(consume p Token_type.SEMICOLON "Expect ';' after return value");
+	Stmt.Return value
 
 and if_statement p = 
 	ignore(consume p Token_type.LEFT_PAREN "Expect '(' after 'if'.");
@@ -234,7 +279,7 @@ and for_statement p =
 			None
 	in
 	ignore (consume p Token_type.RIGHT_PAREN "Expect ')' after for clauses.");
-	
+
 	let body = statement p in
 	let body =
 	match increment with
@@ -253,8 +298,6 @@ and for_statement p =
 		| None -> body
 	in
 	body
-
-
 
 and print_statement p =
 	let expr = expression p in
